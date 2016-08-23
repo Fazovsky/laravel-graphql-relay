@@ -6,10 +6,15 @@ use Nuwave\Relay\Traits\GlobalIdTrait;
 use Illuminate\Database\Eloquent\Model;
 use GraphQL\Type\Definition\ResolveInfo;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use StorWork\Core\GraphQL\Services\GraphQLHelper;
+use StorWork\Core\Models\History;
+use StorWork\Core\Traits\ActiveGroupTrait;
 
 class ConnectionResolver
 {
-    use GlobalIdTrait;
+    use ActiveGroupTrait;
+
+    private $args;
 
     /**
      * Attempt to auto-resolve connection.
@@ -22,10 +27,12 @@ class ConnectionResolver
      */
     public function resolve($root, array $args, ResolveInfo $info, $name = '')
     {
+        $this->setArgs($args);
+
         $items = $this->getItems($root, $info, $name);
 
         if (isset($args['first'])) {
-            $total       = $items->count();
+            $total       = $items->total();
             $first       = $args['first'];
             $after       = $this->decodeCursor($args);
             $currentPage = $first && $after ? floor(($first + $after) / $first) : 1;
@@ -63,6 +70,26 @@ class ConnectionResolver
             $items = method_exists($collection, $name)
                 ? $collection->{$name}()->get() //->select(...$this->getSelectFields($info))->get()
                 : $collection->getAttribute($name);
+
+            if(is_null($items)) {
+                return null;
+            }
+
+            $class = get_class($items->first());
+
+            $model = new $class;
+            if($model instanceof Model) {
+                $ids = $items->lists('id')->toArray();
+
+                if($name == 'histories') {
+                    $history = new History();
+                    $model->setConnection($history->getConnection()->getName());
+                }
+
+                $entityModel = new GraphQLHelper($model, $ids);
+                $items = $entityModel->orderBy($this->getArgs());
+            }
+
             return $items;
         } elseif (is_object($collection) && method_exists($collection, 'get')) {
             $items = $collection->get($name);
@@ -72,6 +99,22 @@ class ConnectionResolver
         }
 
         return $items;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getArgs()
+    {
+        return $this->args;
+    }
+
+    /**
+     * @param mixed $args
+     */
+    public function setArgs($args)
+    {
+        $this->args = $args;
     }
 
     /**
