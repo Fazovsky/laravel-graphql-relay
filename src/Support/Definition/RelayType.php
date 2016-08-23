@@ -58,7 +58,7 @@ abstract class RelayType extends GraphQLType
                 };
             }
 
-            $edge['args'] = RelayConnectionType::connectionArgs();
+            $edge['args'] = RelayConnectionType::connectionArgs() + GraphQLHelper::relayAdditionalArgs();
 
             return $edge;
 
