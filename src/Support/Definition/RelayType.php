@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Nuwave\Relay\Traits\GlobalIdTrait;
+use StorWork\Core\GraphQL\Services\GraphQLHelper;
 
 abstract class RelayType extends GraphQLType
 {
