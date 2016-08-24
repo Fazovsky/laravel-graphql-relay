@@ -77,6 +77,17 @@ class RelayConnectionType extends GraphQLType
                 'resolve' => function ($collection) {
                     return $this->injectCursor($collection);
                 },
+            ],
+            'totalCount' => [
+                'type' => Type::string(),
+                'descirption' => 'Total count of edges',
+                'resolve' => function ($collection) {
+                    if ($collection instanceof LengthAwarePaginator) {
+                        return $collection->total();
+                    }
+
+                    return null;
+                }
             ]
         ];
     }

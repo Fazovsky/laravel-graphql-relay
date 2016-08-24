@@ -79,16 +79,6 @@ class PageInfoType extends GraphQLType
 
                     return null;
                 }
-            ],
-            'totalCount' => [
-                'type' => Type::string(),
-                'description' => 'Total count of items',
-                'resolve' => function ($collection) {
-                    if ($collection instanceof LengthAwarePaginator) {
-                        return $collection->total();
-                    }
-                    return null;
-                }
             ]
         ];
     }
