@@ -59,7 +59,7 @@ class PageInfoType extends GraphQLType
                     if ($collection instanceof LengthAwarePaginator) {
                         return $this->encodeGlobalId(
                             'arrayconnection',
-                            $collection->firstItem() * $collection->currentPage()
+                            $collection->firstItem() //* $collection->currentPage()
                         );
                     }
 
@@ -73,7 +73,7 @@ class PageInfoType extends GraphQLType
                     if ($collection instanceof LengthAwarePaginator) {
                         return $this->encodeGlobalId(
                             'arrayconnection',
-                            $collection->lastItem() * $collection->currentPage()
+                            $collection->lastItem() //* $collection->currentPage()
                         );
                     }
 
