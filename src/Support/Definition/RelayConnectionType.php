@@ -83,7 +83,7 @@ class RelayConnectionType extends GraphQLType
                 'descirption' => 'Total count of edges',
                 'resolve' => function ($collection) {
                     if ($collection instanceof LengthAwarePaginator) {
-                        return $collection->total();
+                        return (int)$collection->total();
                     }
 
                     return null;
