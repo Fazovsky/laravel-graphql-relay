@@ -59,7 +59,7 @@ class PageInfoType extends GraphQLType
                     if ($collection instanceof LengthAwarePaginator) {
                         return $this->encodeGlobalId(
                             'arrayconnection',
-                            $collection->firstItem() * $collection->currentPage()
+                            $collection->firstItem() //* $collection->currentPage()
                         );
                     }
 
@@ -73,20 +73,10 @@ class PageInfoType extends GraphQLType
                     if ($collection instanceof LengthAwarePaginator) {
                         return $this->encodeGlobalId(
                             'arrayconnection',
-                            $collection->lastItem() * $collection->currentPage()
+                            $collection->lastItem() //* $collection->currentPage()
                         );
                     }
 
-                    return null;
-                }
-            ],
-            'totalCount' => [
-                'type' => Type::string(),
-                'description' => 'Total count of items',
-                'resolve' => function ($collection) {
-                    if ($collection instanceof LengthAwarePaginator) {
-                        return (int)$collection->total();
-                    }
                     return null;
                 }
             ]

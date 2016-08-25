@@ -77,6 +77,17 @@ class RelayConnectionType extends GraphQLType
                 'resolve' => function ($collection) {
                     return $this->injectCursor($collection);
                 },
+            ],
+            'totalCount' => [
+                'type' => Type::string(),
+                'descirption' => 'Total count of edges',
+                'resolve' => function ($collection) {
+                    if ($collection instanceof LengthAwarePaginator) {
+                        return $collection->total();
+                    }
+
+                    return null;
+                }
             ]
         ];
     }
@@ -131,10 +142,10 @@ class RelayConnectionType extends GraphQLType
     protected function injectCursor($collection)
     {
         if ($collection instanceof LengthAwarePaginator) {
-            $page = $collection->currentPage();
+            $page = $collection->firstItem();
 
             $collection->values()->each(function ($item, $x) use ($page) {
-                $cursor        = ($x + 1) * $page;
+                $cursor        = $page + $x;
                 $encodedCursor = $this->encodeGlobalId('arrayconnection', $cursor);
                 if (is_array($item)) {
                     $item['relayCursor'] = $encodedCursor;

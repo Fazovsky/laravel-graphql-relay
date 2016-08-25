@@ -32,7 +32,7 @@ class ConnectionResolver
         $items = $this->getItems($root, $info, $name);
 
         if (isset($args['first'])) {
-            $total       = $items->total();
+            $total       = (($items instanceof Paginator) ? $items->total() : $items->count());
             $first       = $args['first'];
             $after       = $this->decodeCursor($args);
             $currentPage = $first && $after ? floor(($first + $after) / $first) : 1;
