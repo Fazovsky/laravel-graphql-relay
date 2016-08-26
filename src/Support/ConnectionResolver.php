@@ -75,15 +75,18 @@ class ConnectionResolver
                 return null;
             }
 
-            if($collection instanceof Model) {
+            $class = get_class($items->first());
+            $model = new $class;
+
+            if($model instanceof Model) {
                 $ids = $items->lists('id')->toArray();
 
                 if($name == 'histories') {
                     $history = new History();
-                    $collection->setConnection($history->getConnection()->getName());
+                    $model->setConnection($history->getConnection()->getName());
                 }
 
-                $entityModel = new GraphQLHelper($collection, $ids);
+                $entityModel = new GraphQLHelper($model, $ids);
                 $newItems = $entityModel->orderBy($this->getArgs());
             }
 
@@ -98,6 +101,7 @@ class ConnectionResolver
 
         return $items;
     }
+
 
     /**
      * @return mixed
