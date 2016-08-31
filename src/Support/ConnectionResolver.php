@@ -79,7 +79,7 @@ class ConnectionResolver
 
             $model = new $class;
             if($model instanceof Model) {
-                $ids = $items->lists('id')->toArray();
+                $ids = $items->pluck('id')->toArray();
 
                 if($name == 'histories') {
                     $history = new History();
