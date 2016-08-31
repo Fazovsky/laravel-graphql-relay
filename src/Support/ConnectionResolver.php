@@ -2,6 +2,7 @@
 
 namespace Nuwave\Relay\Support;
 
+use Illuminate\Database\Eloquent\Collection;
 use Nuwave\Relay\Traits\GlobalIdTrait;
 use Illuminate\Database\Eloquent\Model;
 use GraphQL\Type\Definition\ResolveInfo;
@@ -76,8 +77,9 @@ class ConnectionResolver
             }
 
             $class = get_class($items->first());
-
             $model = new $class;
+
+            $newItems = new Collection();
             if($model instanceof Model) {
                 $ids = $items->pluck('id')->toArray();
 
@@ -87,10 +89,11 @@ class ConnectionResolver
                 }
 
                 $entityModel = new GraphQLHelper($model, $ids);
-                $items = $entityModel->orderBy($this->getArgs());
+                $newItems = $entityModel->orderBy($this->getArgs());
             }
 
-            return $items;
+            return $items->only($newItems->modelKeys());
+
         } elseif (is_object($collection) && method_exists($collection, 'get')) {
             $items = $collection->get($name);
             return $items;
@@ -100,6 +103,7 @@ class ConnectionResolver
 
         return $items;
     }
+
 
     /**
      * @return mixed
