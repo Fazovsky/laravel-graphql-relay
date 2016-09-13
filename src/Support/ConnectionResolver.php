@@ -10,6 +10,9 @@ use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use StorWork\Core\GraphQL\Services\GraphQLHelper;
 use StorWork\Core\Models\History;
 use StorWork\Core\Traits\ActiveGroupTrait;
+use StorWork\Core\Http\Controllers\AuthenticateController;
+use StorWork\Permissions\Models\Group;
+use StorWork\Core\GraphQL\Services\ElasticSearch;
 
 class ConnectionResolver
 {
@@ -88,11 +91,20 @@ class ConnectionResolver
                     $model->setConnection($history->getConnection()->getName());
                 }
 
-                $entityModel = new GraphQLHelper($model, $ids);
-                $newItems = $entityModel->orderBy($this->getArgs());
+                if(class_exists(\Elastica\Client::class)) {
+                    $activeGroup = AuthenticateController::getActiveGroup();
+                    $index = Group::findOrFail($activeGroup['id'])->slug;
+                    $type = str_plural(strtolower(class_basename($model)));
+                    $elasticsearch = new ElasticSearch($index, $type, $ids);
+                    $newItems = $elasticsearch->filter($this->getArgs());
+                } else {
+                    $entityModel = new GraphQLHelper($model, $ids);
+                    $newItems = $entityModel->orderBy($this->getArgs());
+                    $newItems = $newItems->modelKeys();
+                }
             }
 
-            return $items->only($newItems->modelKeys());
+            return $items->only($newItems);
 
         } elseif (is_object($collection) && method_exists($collection, 'get')) {
             $items = $collection->get($name);
