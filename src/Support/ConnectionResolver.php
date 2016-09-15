@@ -104,6 +104,8 @@ class ConnectionResolver
                     $newItems = $entityModel->orderBy($this->getArgs());
                     $newItems = $newItems->modelKeys();
                 }
+            } else {
+                $newItems = $items->pluck('id')->toArray();
             }
 
             return $items->only($newItems);
