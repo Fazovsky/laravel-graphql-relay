@@ -13,6 +13,7 @@ use StorWork\Core\Traits\ActiveGroupTrait;
 use StorWork\Core\Http\Controllers\AuthenticateController;
 use StorWork\Permissions\Models\Group;
 use StorWork\Core\GraphQL\Services\ElasticSearch;
+use StorWork\Permissions\Models\Relation;
 
 class ConnectionResolver
 {
@@ -91,7 +92,8 @@ class ConnectionResolver
                     $model->setConnection($history->getConnection()->getName());
                 }
 
-                if(class_exists(\Elastica\Client::class)) {
+
+                if(class_exists(\Elastica\Client::class) && !($model instanceof Relation)) {
                     $activeGroup = AuthenticateController::getActiveGroup();
                     $index = Group::findOrFail($activeGroup['id'])->slug;
                     $type = str_plural(strtolower(class_basename($model)));
