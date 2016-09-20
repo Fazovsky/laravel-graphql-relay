@@ -7,6 +7,8 @@ use Nuwave\Relay\Traits\GlobalIdTrait;
 use Illuminate\Database\Eloquent\Model;
 use GraphQL\Type\Definition\ResolveInfo;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use StorWork\Core\GraphQL\Services\ElasticsearchAggergation;
+use StorWork\Core\GraphQL\Services\ElasticsearchAggregation;
 use StorWork\Core\GraphQL\Services\GraphQLHelper;
 use StorWork\Core\Models\History;
 use StorWork\Core\Traits\ActiveGroupTrait;
@@ -42,19 +44,28 @@ class ConnectionResolver
             $after       = $this->decodeCursor($args);
             $currentPage = $first && $after ? floor(($first + $after) / $first) : 1;
 
-            return new Paginator(
+            $paginator = new Paginator(
                 $items->slice($after)->take($first),
                 $total,
                 $first,
                 $currentPage
             );
+
+
+            $paginator->aggregation = $items->aggregation;
+
+            return $paginator;
         }
 
-        return new Paginator(
+        $paginator = new Paginator(
             $items,
             count($items),
             (count($items) > 0 ? count($items) : 1)
         );
+
+        $paginator->aggregation = $items->aggregation;
+
+        return $paginator;
     }
 
     /**
@@ -84,6 +95,7 @@ class ConnectionResolver
             $model = new $class;
 
             $newItems = new Collection();
+            $aggregation = new Collection();
             if($model instanceof Model) {
                 $ids = $items->pluck('id')->toArray();
 
@@ -92,13 +104,13 @@ class ConnectionResolver
                     $model->setConnection($history->getConnection()->getName());
                 }
 
-
                 if(class_exists(\Elastica\Client::class) && !($model instanceof Relation)) {
                     $activeGroup = AuthenticateController::getActiveGroup();
                     $index = Group::findOrFail($activeGroup['id'])->slug;
                     $type = str_plural(strtolower(class_basename($model)));
                     $elasticsearch = new ElasticSearch($index, $type, $ids);
                     $newItems = $elasticsearch->filter($this->getArgs());
+                    $aggregation = collect($elasticsearch->aggregation['buckets']);
                 } else {
                     $entityModel = new GraphQLHelper($model, $ids);
                     $newItems = $entityModel->orderBy($this->getArgs());
@@ -107,8 +119,9 @@ class ConnectionResolver
             } else {
                 $newItems = $items->pluck('id')->toArray();
             }
-
-            return $items->only($newItems);
+            $i = $items->only($newItems);
+            $i->aggregation = $aggregation;
+            return $i;
 
         } elseif (is_object($collection) && method_exists($collection, 'get')) {
             $items = $collection->get($name);
