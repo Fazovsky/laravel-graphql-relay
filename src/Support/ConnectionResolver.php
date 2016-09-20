@@ -51,8 +51,9 @@ class ConnectionResolver
                 $currentPage
             );
 
-
-            $paginator->aggregation = $items->aggregation;
+            if($items->has('aggregation')) {
+                $paginator->aggregation = $items->aggregation;
+            }
 
             return $paginator;
         }
@@ -62,8 +63,9 @@ class ConnectionResolver
             count($items),
             (count($items) > 0 ? count($items) : 1)
         );
-
-        $paginator->aggregation = $items->aggregation;
+        if($items->has('aggregation')) {
+            $paginator->aggregation = $items->aggregation;
+        }
 
         return $paginator;
     }
