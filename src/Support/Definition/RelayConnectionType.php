@@ -88,6 +88,17 @@ class RelayConnectionType extends GraphQLType
 
                     return null;
                 }
+            ],
+            'aggs' => [
+                'type' => Type::listOf(GraphQL::type('aggregation')),
+                'descirption' => 'Total count of edges',
+                'resolve' => function ($collection) {
+                    if(!$collection->aggregation->isEmpty()) {
+                        return $collection->aggregation;
+                    }
+
+                    return null;
+                }
             ]
         ];
     }
