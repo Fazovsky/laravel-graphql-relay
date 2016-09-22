@@ -52,7 +52,7 @@ class ConnectionResolver
                 $currentPage
             );
 
-            if($items->aggregation instanceof \Illuminate\Support\Collection) {
+            if(property_exists($items, 'aggregation')) {
                 $paginator->aggregation = $items->aggregation;
             }
 
@@ -65,7 +65,7 @@ class ConnectionResolver
             (count($items) > 0 ? count($items) : 1)
         );
 
-        if($items->aggregation instanceof \Illuminate\Support\Collection) {
+        if(property_exists($items, 'aggregation')) {
             $paginator->aggregation = $items->aggregation;
         }
 
