@@ -3,6 +3,7 @@
 namespace Nuwave\Relay\Support;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Notifications\DatabaseNotification;
 use Nuwave\Relay\Traits\GlobalIdTrait;
 use Illuminate\Database\Eloquent\Model;
 use GraphQL\Type\Definition\ResolveInfo;
@@ -51,7 +52,7 @@ class ConnectionResolver
                 $currentPage
             );
 
-            if($items->has('aggregation')) {
+            if($items->aggregation instanceof \Illuminate\Support\Collection) {
                 $paginator->aggregation = $items->aggregation;
             }
 
@@ -63,7 +64,8 @@ class ConnectionResolver
             count($items),
             (count($items) > 0 ? count($items) : 1)
         );
-        if($items->has('aggregation')) {
+
+        if($items->aggregation instanceof \Illuminate\Support\Collection) {
             $paginator->aggregation = $items->aggregation;
         }
 
@@ -106,12 +108,21 @@ class ConnectionResolver
                     $model->setConnection($history->getConnection()->getName());
                 }
 
-                if(class_exists(\Elastica\Client::class) && !($model instanceof Relation)) {
+                if (class_exists(\Elastica\Client::class) && !($model instanceof Relation)) {
                     $activeGroup = AuthenticateController::getActiveGroup();
-                    $index = Group::findOrFail($activeGroup['id'])->slug;
+                    if ($model instanceof DatabaseNotification) {
+                        $index = 'common';
+                    } else {
+                        $index = Group::findOrFail($activeGroup['id'])->slug;
+                    }
                     $type = str_plural(strtolower(class_basename($model)));
                     $elasticsearch = new ElasticSearch($index, $type, $ids);
                     $newItems = $elasticsearch->filter($this->getArgs());
+                    $scores = $elasticsearch->scores;
+                    $items->transform(function($item) use($scores){
+                        $item->score = isset($scores[$item->id]) ? $scores[$item->id] : 0;
+                        return $item;
+                    });
                     $aggregation = collect($elasticsearch->aggregation['buckets']);
                 } else {
                     $entityModel = new GraphQLHelper($model, $ids);
@@ -121,7 +132,15 @@ class ConnectionResolver
             } else {
                 $newItems = $items->pluck('id')->toArray();
             }
-            $i = $items->only($newItems);
+
+            $i = $items->only($newItems)->sortByDesc('score');
+            if(isset($this->getArgs()['order'])) {
+                $orderParam = explode(" ", $this->getArgs()['order']);
+                $i = $i->sortBy($orderParam[0]);
+                if($orderParam[1] == 'DESC') {
+                    $i = $i->sortByDesc($orderParam[0]);
+                }
+            }
             $i->aggregation = $aggregation;
             return $i;
 
