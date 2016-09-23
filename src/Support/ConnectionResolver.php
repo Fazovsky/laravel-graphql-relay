@@ -2,8 +2,10 @@
 
 namespace Nuwave\Relay\Support;
 
+use GraphQL\Type\Definition\Type;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Notifications\DatabaseNotification;
+use Nuwave\Relay\Support\Definition\GraphQLType;
 use Nuwave\Relay\Traits\GlobalIdTrait;
 use Illuminate\Database\Eloquent\Model;
 use GraphQL\Type\Definition\ResolveInfo;
@@ -17,6 +19,7 @@ use StorWork\Core\Http\Controllers\AuthenticateController;
 use StorWork\Permissions\Models\Group;
 use StorWork\Core\GraphQL\Services\ElasticSearch;
 use StorWork\Permissions\Models\Relation;
+use GraphQL;
 
 class ConnectionResolver
 {
@@ -51,9 +54,10 @@ class ConnectionResolver
                 $first,
                 $currentPage
             );
-
-            if(property_exists($items, 'aggregation')) {
-                $paginator->aggregation = $items->aggregation;
+            if(!is_null($items)) {
+                if (property_exists($items, 'aggregation')) {
+                    $paginator->aggregation = $items->aggregation;
+                }
             }
 
             return $paginator;
@@ -65,8 +69,10 @@ class ConnectionResolver
             (count($items) > 0 ? count($items) : 1)
         );
 
-        if(property_exists($items, 'aggregation')) {
-            $paginator->aggregation = $items->aggregation;
+        if(!is_null($items)) {
+            if (property_exists($items, 'aggregation')) {
+                $paginator->aggregation = $items->aggregation;
+            }
         }
 
         return $paginator;
@@ -82,6 +88,7 @@ class ConnectionResolver
     {
         $items = [];
 
+//        dump($collection);
         if ($collection instanceof Model) {
             if (in_array($name, array_keys($collection->getRelations()))) {
                 return $collection->{$name};
@@ -123,7 +130,18 @@ class ConnectionResolver
                         $item->score = isset($scores[$item->id]) ? $scores[$item->id] : 0;
                         return $item;
                     });
-                    $aggregation = collect($elasticsearch->aggregation['buckets']);
+                    $a = [];
+                    if(!empty($elasticsearch->aggregation)) {
+                        foreach ($elasticsearch->aggregation as $key => $aggs) {
+                            $tmpGraphQlType = camel_case(str_replace(".", "_", $key));
+                            $buckets = array_map(function($bucket) use($tmpGraphQlType) {
+                                $bucket['type'] = $tmpGraphQlType;
+                                return $bucket;
+                            }, $aggs['buckets']);
+                            $a = array_merge_recursive($a, $buckets);
+                        }
+                        $aggregation = collect($a);
+                    }
                 } else {
                     $entityModel = new GraphQLHelper($model, $ids);
                     $newItems = $entityModel->orderBy($this->getArgs());
